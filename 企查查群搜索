@@ -1,0 +1,165 @@
+### 进入界面后要登陆，否则会有次数限制
+
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import lxml
+import time
+import datetime
+import csv
+import random #randint()函数。
+import re
+#path需要改成Chromedriver所在的位置
+path = r'E:\software\ana\chromedriver.exe' 
+#打开浏览器
+chrome_options = Options()
+#chrome_options.add_argument('--headless')
+#chrome_options.add_argument('--disable-gpu')
+# 创建浏览器对象（路径名称，option选项）
+randomInt = random.randint(4,8)
+driver = webdriver.Chrome(executable_path=path, options=chrome_options)
+#############begin######################################
+driver.get('https://www.qichacha.com/')
+
+## A股上市公司的查询 
+
+### 股东信息
+def top10stockholder():
+    #找最大的项目数：
+    global max_row_numcont
+    for date in ['2019-03-31','2019-06-30','2019-09-30','2019-12-21','gdList']:
+        try:
+            max_row_numcont = driver.find_element_by_xpath('//*[@id="'+date+'"]/table/tbody/tr[1]')
+            print(max_row_numcont.text)
+            max_row_num = len(max_row_numcont.text.split(' '))
+            max_row_num
+            ####获取股东所有的信息
+            for j in range(2,12):
+                for rows in range(1,max_row_num):
+                    title_content = driver.find_element_by_xpath('//*[@id="'+date+'"]/table/tbody/tr[1]/th['+str(rows)+']')
+                    #print(rows)
+                    raw_cont = driver.find_element_by_xpath('//*[@id="'+date+'"]/table/tbody/tr['+str(j)+']/td['+str(rows)+']')
+                    #print(title_content.text)
+                    if len(title_content.text)==0:continue
+                    print(title_content.text,':',raw_cont.text)
+                #i = i+1
+                j = j+1
+                print('*'*50)
+        except:pass
+    return
+### 主要人员 ###################################################
+def C3member():
+    global senior_num
+    global count_num
+    try:
+        #senior_con = driver.find_element_by_xpath('//*[@id="ggList"]/div/span[1]')
+        senior_con = driver.find_element_by_xpath('//*[@id="ggList"]/div').text
+        senior_num = re.findall('[0-9]+',senior_con)
+        #print(senior_num)
+        print('\n')
+        print('*'*25+'高管%s人'%(senior_num[0])+'*'*25)
+    except:pass
+    ###主要人员项目
+    try:
+        cont_num = driver.find_element_by_xpath('//*[@id="ggList"]/table/tbody/tr[1]')
+        #print(cont_num.text)
+        count_num = len(cont_num.text.split(' '))
+        #print(count_num)
+    except:pass
+    ####找到所有的信息
+    for member in range(2,int(senior_num[0])+2):
+        for num in range(1,count_num+1):
+            title = driver.find_element_by_xpath(r'//*[@id="ggList"]/table/tbody/tr[1]/th['+str(num)+']')
+            count1 = driver.find_element_by_xpath(r'//*[@id="ggList"]/table/tbody/tr['+str(member)+']/td['+str(num)+r']')
+            print('%s:%s'%(title.text,count1.text))
+            num = num+1
+        print('*'*50)
+        member = member+1
+    return 
+
+## 非A股上市公司
+
+### 股东的信息
+def smalltype():
+    #找到股东的最大数
+    share_holder_num = driver.find_element_by_xpath('//*[@id="partnerslist"]/div[1]/span[1]')
+    ##找到最大栏目数量
+    cont_num = driver.find_element_by_xpath('//*[@id="partnerslist"]/table/tbody/tr[1]')
+    #print(share_holder_num.text)
+    count_num = len(cont_num.text.split(' '))
+    #print(count_num)
+    ####找到所有的栏目
+    for i in range(1,int(count_num)):
+        title = driver.find_element_by_xpath('//*[@id="partnerslist"]/table/tbody/tr[1]/th['+str(i)+']')
+        #print(title.text)
+    for num in range(2,int(share_holder_num.text)+2):
+        for i in range(1,int(count_num)):
+            title = driver.find_element_by_xpath('//*[@id="partnerslist"]/table/tbody/tr[1]/th['+str(i)+']')
+            #print(title.text)
+            content = driver.find_element_by_xpath('//*[@id="partnerslist"]/table/tbody/tr['+str(num)+']/td['+str(i)+']')
+            print(title.text,':',content.text)
+        print("*"*80)
+    return 
+### 主要人员 ###########################
+def SmallMainMember1():    
+    #找到最大栏目数
+    C3MemberNum = driver.find_element_by_xpath('//*[@id="Mainmember"]/table/tbody/tr[1]')
+    #C3MemberOw = len(C3MenberNum.text.split(' '))
+    a =len(C3MemberNum.text.split(' '))
+    #print(a)
+    #找到人员数量
+    C3MemberCount = driver.find_element_by_xpath('//*[@id="Mainmember"]/div/span[1]').text
+    print('**************高管共有：%s人************'%C3MemberCount)
+    ###输出人员的信息
+    for count in range(2,int(C3MemberCount)+2):
+        for rows in range(1,int(a)+1):
+            titles = driver.find_element_by_xpath('//*[@id="Mainmember"]/table/tbody/tr[1]/th['+str(rows)+']')
+            content = driver.find_element_by_xpath('//*[@id="Mainmember"]/table/tbody/tr['+str(count)+']/td['+str(rows)+']')
+            print(titles.text,':',content.text)
+        print('*'*50) 
+    return
+
+## 输入公司
+
+####输入查找公司 def 版
+def start(conpany_name):    
+    finds_enter_box = driver.find_elements_by_xpath('//*[@id="searchkey"]')
+    finds_enter_bottom = driver.find_element_by_xpath('//*[@id="V3_Index_S"]/div/span')
+    for box in finds_enter_box:
+        box.send_keys(conpany_name)
+    finds_enter_bottom.click()
+    ##进入第一家公司
+    fir_bottom = driver.find_element_by_xpath('//*[@id="search-result"]/tr[1]/td[3]/a')
+    fir_bottom.click()
+    ###切换新页面
+    now_handle = driver.current_window_handle 
+    print(now_handle)
+    all_handles = driver.window_handles 
+    for handle in all_handles:
+        if handle!=now_handle:
+            #输出待选择的窗口句柄
+            print(handle)
+            driver.switch_to_window(handle)
+            time.sleep(10)
+    #判断方式
+    options = WebDriverWait(driver, 10).until(EC.visibility_of_all_elements_located((By.XPATH, '/html/body/div[4]/div[2]/div[1]/header')))[0].text   #driver.find_element_by_xpath('/html/body/div[4]/div[2]/div[1]/header').text
+    if "上市信息" in options: 
+        print('公司类型：A股、新三板上市')          #/html/body/div[4]/div[2]/div[1]/header
+        print('\n')
+        top10stockholder()###10大股东
+        C3member()
+    else:
+        print('公司类型：非A股上市')
+        print('\n')
+        smalltype()##小类的股东
+        SmallMainMember1()
+    ##切回搜索页面
+    handles = driver.window_handles
+    driver.close()
+    driver.switch_to.window(handles[0])
+    driver.back()
+
+start('中国证券金融股份有限公司')
